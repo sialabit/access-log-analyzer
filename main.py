@@ -2,8 +2,10 @@ import os
 import sys
 import getopt
 import glob
-
 import hashlib
+from pprint import pprint
+
+import apache_log_parser
 
 LOG_DIR = "./sample-logs"
 MEMORY = 2048
@@ -30,6 +32,11 @@ def cmd_handler():
     except getopt.GetoptError as err:
         print str(err)
 
+def line_parser(line):
+    parser = apache_log_parser.make_parser('%h %l %u %t "%r" %>s %b "%{Referer}i" "%{User-Agent}i"')
+    # pprint(parser(line))
+    return parser(line)
+
 
 def main():
     cmd_handler()
@@ -37,8 +44,6 @@ def main():
     for fname in glob.glob(os.path.join(LOG_DIR, '*.log')):
         with open(fname) as f:
             for l in f:
-                data.append(l)
-
-    print(len(data))
+                data.append(line_parser(l))
 
 main()
