@@ -1,7 +1,7 @@
 import os
 import sys
 import getopt
-import glob
+from glob import glob
 from datetime import datetime, date, time
 import argparse
 import hashlib
@@ -46,7 +46,7 @@ def handle(args):
 def time_cmd_handler(args):
     each_hour = {}
 
-    for fname in glob.glob(os.path.join(LOG_DIR, '*.log')):
+    for fname in glob(os.path.join(LOG_DIR, '*.log')):
         with open(fname) as f:
             for l in f:
                 # data.append(line_parser(l))
@@ -62,6 +62,17 @@ def time_cmd_handler(args):
         print(dt.strftime('%d/%b/%Y:%H:%M'), each_hour[ts])
 
 def ip_cmd_handler(args):
+    each_ip = {}
+
+    for fname in glob(os.path.join(LOG_DIR, '*.log')):
+        with open(fname) as f:
+            for l in f:
+                ip = l.split()[0]
+                each_ip[ip] = each_ip.get(ip, 0) + 1 
+
+    for ip in sorted(each_ip, key=each_ip.__getitem__, reverse=True):
+        # print(ip, each_ip[ip])
+        print('{0}\t{1}'.format(ip, each_ip[ip]))
 
 
 data = []
