@@ -19,19 +19,6 @@ def md5(fname):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
-def cmd_handler():
-    # if not len(sys.argv[1:]):
-    #     print('Usage')
-        # Usage
-
-    try:
-        opts, args = getopt.getopt(
-                sys.argv[1:],
-                'm:',
-                ['mode='])
-    except getopt.GetoptError as err:
-        print(str(err))
-
 def line_parser(line):
     parser = apache_log_parser.make_parser('%h %l %u %t "%r" %>s %b "%{Referer}i" "%{User-Agent}i"')
     return parser(line)
@@ -40,11 +27,18 @@ def resided_ts(dt):
     resided_dt = dt.replace(minute=0, second=0, microsecond=0) 
     return resided_dt.timestamp()
 
-def handle(args):
-    pprint(args)
+def parse_time_str(time_str):
+    h = int( time_str.split(':')[1] ) if ':' in time_str else 0
+    y, m, d = map(int, time_str.split(':')[0].split('/'))
+    dt = datetime(year=y, month=m, day=d, hour=h)
+    return dt.timestamp()
 
 def time_cmd_handler(args):
     each_hour = {}
+    search_opt = { 'start': None, 'end': None } 
+
+    for k in ['start', 'end']:
+        search_opt[k] = parse_time_str(getattr(args, k)) if getattr(args, k) else None
 
     for fname in glob(os.path.join(LOG_DIR, '*.log')):
         with open(fname) as f:
@@ -53,13 +47,23 @@ def time_cmd_handler(args):
                 parsed = line_parser(l)
                 ts = resided_ts(parsed['time_received_tz_datetimeobj'])
 
+                if search_opt['start'] and search_opt['end']:
+                    if not (search_opt['start'] <= ts and ts <= search_opt['end']):
+                        continue
+                elif search_opt['start']:
+                    if ts < search_opt['start']:
+                        continue
+                elif search_opt['end']:
+                    if ts > search_opt['end']:
+                        continue
+
                 each_hour[ts] = each_hour.get(ts, 0) + 1
     
     for ts in each_hour:
         num_ts = float(ts)
         dt = datetime.fromtimestamp(num_ts)
 
-        print(dt.strftime('%d/%b/%Y:%H:%M'), each_hour[ts])
+        print(dt.strftime('%d/%m/%Y:%H:%M~\t'), each_hour[ts])
 
 def ip_cmd_handler(args):
     each_ip = {}
