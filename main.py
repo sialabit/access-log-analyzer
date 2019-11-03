@@ -35,7 +35,7 @@ def parse_time_str(time_str):
     dt = datetime(year=y, month=m, day=d, hour=h)
     return dt.timestamp()
 
-def integrate_hour_cnt(data):
+def integrate_cnts(data):
     rtn = {}
     for d in data:
         for ts in d:
@@ -103,7 +103,7 @@ def time_cmd_handler(args):
             each_hour.append(data)
             this_cache['results']['time'] = data
 
-    each_hour = integrate_hour_cnt(each_hour)
+    each_hour = integrate_cnts(each_hour)
     each_hour = filter_hour(each_hour, **search_opt)
 
     # response
@@ -117,16 +117,52 @@ def time_cmd_handler(args):
         json.dump(cache, f)
 
 def ip_cmd_handler(args):
-    each_ip = {}
+    each_ip = []
+
+    with open(CACHE_PATH, 'r') as cachefile:
+        cache = json.load(cachefile) 
 
     for fname in glob(os.path.join(LOG_DIR, '*.log')):
-        with open(fname) as f:
-            for l in f:
-                ip = l.split()[0]
-                each_ip[ip] = each_ip.get(ip, 0) + 1 
 
-    for ip in sorted(each_ip, key=each_ip.__getitem__, reverse=True):
+        is_same = False
+        hash = md5(fname)
+        abspath = os.path.abspath(fname)
+        this_cache = {}
+
+        if not abspath in cache.keys():
+            cache[abspath] = {
+                    'hash': hash,
+                    'results': { 'time': {}, 'ip': {} }}    
+            this_cache = cache[abspath]
+        else:
+            this_cache = cache[abspath]
+            if this_cache['hash'] == hash:
+                is_same = True
+            else:
+                cache[abspath]['hash'] = hash
+
+        if is_same and this_cache['results']['ip']:
+            each_ip.append(this_cache['results']['ip'])
+        else:
+            data = {}
+
+            with open(fname) as f:
+                for l in f:
+                    ip = l.split()[0]
+                    data[ip] = data.get(ip, 0) + 1 
+            each_ip.append(data)
+
+            each_ip.append(data)
+            this_cache['results']['ip'] = data
+
+    each_ip = integrate_cnts(each_ip)
+
+    # response
+    for ip in sorted(each_ip, key=each_ip.__getitem__, reverse=args.reverse):
         print('{0}\t{1}'.format(ip, each_ip[ip]))
+
+    with open(CACHE_PATH, 'w+') as f:
+        json.dump(cache, f)
 
 def main():
     if not os.path.exists(CACHE_PATH):
