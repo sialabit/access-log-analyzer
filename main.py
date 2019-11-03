@@ -42,19 +42,21 @@ def integrate_hour_cnt(data):
             rtn[ts] = rtn.get(ts, 0) + d[ts]
     return rtn
 
-# destructive
 def filter_hour(data, start, end):
+    rtn = {}
     for ts in data:
         ts_n = float(ts)
         if start and end:
             if not (start <= ts_n and ts_n <= end):
-                del data[ts]           
+                continue
         elif start:
             if ts_n < start:
-                del data[ts]
+                continue
         elif end:
             if ts_n > end:
-                del data[ts]
+                continue
+        rtn[ts] = data[ts]
+    return rtn
 
 def time_cmd_handler(args):
     each_hour = []
@@ -85,7 +87,6 @@ def time_cmd_handler(args):
             else:
                 cache[abspath]['hash'] = hash
 
-
         if is_same and this_cache['results']['time']:
             each_hour.append(this_cache['results']['time'])
         else:
@@ -102,17 +103,15 @@ def time_cmd_handler(args):
             each_hour.append(data)
             this_cache['results']['time'] = data
 
-    # integrate
     each_hour = integrate_hour_cnt(each_hour)
-    # filter
-    filter_hour(each_hour, **search_opt)
+    each_hour = filter_hour(each_hour, **search_opt)
 
     # response
-    for ts in each_hour:
+    for ts in sorted(each_hour, key=float, reverse=args.reverse):
         num_ts = float(ts)
         dt = datetime.fromtimestamp(num_ts)
 
-        print(dt.strftime('%d/%m/%Y:%H:%M~\t'), each_hour[ts])
+        print(dt.strftime('%Y/%m/%d:%H:%M~\t'), each_hour[ts])
     
     with open(CACHE_PATH, 'w+') as f:
         json.dump(cache, f)
@@ -142,6 +141,7 @@ def main():
     parser_time.add_argument('-e', '--end')
     parser_time.add_argument('-o', '--output')
     parser_time.add_argument('-g', '--graph', action='store_true')
+    parser_time.add_argument('-r', '--reverse', action='store_true')
     parser_time.set_defaults(handler=time_cmd_handler)
 
     parser_ip = subcmd_parsers.add_parser('ip')
