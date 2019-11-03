@@ -40,9 +40,21 @@ def integrate_hour_cnt(data):
     for d in data:
         for ts in d:
             rtn[ts] = rtn.get(ts, 0) + d[ts]
+    return rtn
 
+# destructive
 def filter_hour(data, start, end):
-    pass
+    for ts in data:
+        ts_n = float(ts)
+        if start and end:
+            if not (start <= ts_n and ts_n <= end):
+                del data[ts]           
+        elif start:
+            if ts_n < start:
+                del data[ts]
+        elif end:
+            if ts_n > end:
+                del data[ts]
 
 def time_cmd_handler(args):
     each_hour = []
@@ -59,20 +71,23 @@ def time_cmd_handler(args):
         is_same = False
         hash = md5(fname)
         abspath = os.path.abspath(fname)
-        this_cache = cache[abspath]
+        this_cache = {}
 
         if not abspath in cache.keys():
             cache[abspath] = {
                     'hash': hash,
                     'results': { 'time': {}, 'ip': {} }}    
+            this_cache = cache[abspath]
         else:
+            this_cache = cache[abspath]
             if this_cache['hash'] == hash:
                 is_same = True
             else:
                 cache[abspath]['hash'] = hash
 
+
         if is_same and this_cache['results']['time']:
-            each_hour.append(this_cache['result']['time'])
+            each_hour.append(this_cache['results']['time'])
         else:
             data = {}
 
@@ -81,15 +96,6 @@ def time_cmd_handler(args):
                     parsed = line_parser(l)
                     ts = resided_ts(parsed['time_received_tz_datetimeobj'])
 
-                    # if search_opt['start'] and search_opt['end']:
-                    #     if not (search_opt['start'] <= ts and ts <= search_opt['end']):
-                    #         continue
-                    # elif search_opt['start']:
-                    #     if ts < search_opt['start']:
-                    #         continue
-                    # elif search_opt['end']:
-                    #     if ts > search_opt['end']:
-                    #         continue
 
                     data[ts] = data.get(ts, 0) + 1
 
@@ -99,9 +105,7 @@ def time_cmd_handler(args):
     # integrate
     each_hour = integrate_hour_cnt(each_hour)
     # filter
-    each_hour = filter_hour(each_hour, **search_opt)
-
-    # sort
+    filter_hour(each_hour, **search_opt)
 
     # response
     for ts in each_hour:
@@ -111,7 +115,7 @@ def time_cmd_handler(args):
         print(dt.strftime('%d/%m/%Y:%H:%M~\t'), each_hour[ts])
     
     with open(CACHE_PATH, 'w+') as f:
-        json.dump(caceh, f)
+        json.dump(cache, f)
 
 def ip_cmd_handler(args):
     each_ip = {}
