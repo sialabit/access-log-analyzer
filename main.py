@@ -3,6 +3,7 @@ import sys
 import getopt
 from glob import glob
 from datetime import datetime, date, time
+import json
 import argparse
 import hashlib
 from pprint import pprint
@@ -34,35 +35,83 @@ def parse_time_str(time_str):
     dt = datetime(year=y, month=m, day=d, hour=h)
     return dt.timestamp()
 
+def integrate_hour_cnt(data):
+    rtn = {}
+    for d in data:
+        for ts in d:
+            rtn[ts] = rtn.get(ts, 0) + d[ts]
+
+def filter_hour(data, start, end):
+    pass
+
 def time_cmd_handler(args):
-    each_hour = {}
+    each_hour = []
+
     search_opt = { 'start': None, 'end': None } 
     for k in ['start', 'end']:
         search_opt[k] = parse_time_str(getattr(args, k)) if getattr(args, k) else None
+    
+    with open(CACHE_PATH, 'r') as cachefile:
+        cache = json.load(cachefile) 
 
     for fname in glob(os.path.join(LOG_DIR, '*.log')):
-        with open(fname) as f:
-            for l in f:
-                parsed = line_parser(l)
-                ts = resided_ts(parsed['time_received_tz_datetimeobj'])
 
-                if search_opt['start'] and search_opt['end']:
-                    if not (search_opt['start'] <= ts and ts <= search_opt['end']):
-                        continue
-                elif search_opt['start']:
-                    if ts < search_opt['start']:
-                        continue
-                elif search_opt['end']:
-                    if ts > search_opt['end']:
-                        continue
+        is_same = False
+        hash = md5(fname)
+        abspath = os.path.abspath(fname)
+        this_cache = cache[abspath]
 
-                each_hour[ts] = each_hour.get(ts, 0) + 1
-    
+        if not abspath in cache.keys():
+            cache[abspath] = {
+                    'hash': hash,
+                    'results': { 'time': {}, 'ip': {} }}    
+        else:
+            if this_cache['hash'] == hash:
+                is_same = True
+            else:
+                cache[abspath]['hash'] = hash
+
+        if is_same and this_cache['results']['time']:
+            each_hour.append(this_cache['result']['time'])
+        else:
+            data = {}
+
+            with open(fname) as f:
+                for l in f:
+                    parsed = line_parser(l)
+                    ts = resided_ts(parsed['time_received_tz_datetimeobj'])
+
+                    # if search_opt['start'] and search_opt['end']:
+                    #     if not (search_opt['start'] <= ts and ts <= search_opt['end']):
+                    #         continue
+                    # elif search_opt['start']:
+                    #     if ts < search_opt['start']:
+                    #         continue
+                    # elif search_opt['end']:
+                    #     if ts > search_opt['end']:
+                    #         continue
+
+                    data[ts] = data.get(ts, 0) + 1
+
+            each_hour.append(data)
+            this_cache['results']['time'] = data
+
+    # integrate
+    each_hour = integrate_hour_cnt(each_hour)
+    # filter
+    each_hour = filter_hour(each_hour, **search_opt)
+
+    # sort
+
+    # response
     for ts in each_hour:
         num_ts = float(ts)
         dt = datetime.fromtimestamp(num_ts)
 
         print(dt.strftime('%d/%m/%Y:%H:%M~\t'), each_hour[ts])
+    
+    with open(CACHE_PATH, 'w+') as f:
+        json.dump(caceh, f)
 
 def ip_cmd_handler(args):
     each_ip = {}
@@ -77,6 +126,10 @@ def ip_cmd_handler(args):
         print('{0}\t{1}'.format(ip, each_ip[ip]))
 
 def main():
+    if not os.path.exists(CACHE_PATH):
+        with open(CACHE_PATH, 'w') as f:
+            f.write('{}')
+
     cmd_parser = argparse.ArgumentParser()
     subcmd_parsers = cmd_parser.add_subparsers()
 
