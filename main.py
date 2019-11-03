@@ -9,7 +9,8 @@ from pprint import pprint
 
 import apache_log_parser
 
-LOG_DIR = "./sample-logs"
+LOG_DIR = './sample-logs'
+CACHE_PATH = './cache.json'
 MEMORY = 2048
 
 def md5(fname):
@@ -36,14 +37,12 @@ def parse_time_str(time_str):
 def time_cmd_handler(args):
     each_hour = {}
     search_opt = { 'start': None, 'end': None } 
-
     for k in ['start', 'end']:
         search_opt[k] = parse_time_str(getattr(args, k)) if getattr(args, k) else None
 
     for fname in glob(os.path.join(LOG_DIR, '*.log')):
         with open(fname) as f:
             for l in f:
-                # data.append(line_parser(l))
                 parsed = line_parser(l)
                 ts = resided_ts(parsed['time_received_tz_datetimeobj'])
 
@@ -75,11 +74,7 @@ def ip_cmd_handler(args):
                 each_ip[ip] = each_ip.get(ip, 0) + 1 
 
     for ip in sorted(each_ip, key=each_ip.__getitem__, reverse=True):
-        # print(ip, each_ip[ip])
         print('{0}\t{1}'.format(ip, each_ip[ip]))
-
-
-data = []
 
 def main():
     cmd_parser = argparse.ArgumentParser()
@@ -102,7 +97,5 @@ def main():
         args.handler(args)
     else:
         print('no such a sub-command')
-
-
 
 main()
