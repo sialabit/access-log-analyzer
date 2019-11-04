@@ -1,14 +1,14 @@
 # Access Log Analyzer
 Access Log Analyzer shows number of accesses either per hour or per IP from access.log created by Apache.
 
-# Environment
+## Environment
 
 ```
 $ python --version
 Python 3.7.3
 ```
 
-# Features
+## Features
 
 - When analyzing same access.log, it is more faster to complete from the second time because of caching.
 - You can specify a order; ascending or descending.
@@ -38,7 +38,7 @@ $ python analyzer.py ip --graph
 ...
 ```
 
-# Usage
+## Usage
 
 ```
 $ python analyzer.py time --help
@@ -66,5 +66,5 @@ optional arguments:
   -g, --graph    show graphicaly --help
 ```
 
-# Note
+## Note
 I used sample Apache log files from [here](https://raw.githubusercontent.com/elastic/examples/master/Common%20Data%20Formats/apache_logs/apache_logs) and fixed it.
