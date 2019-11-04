@@ -15,6 +15,7 @@ import apache_log_parser
 LOG_DIR = './sample-logs'
 CACHE_PATH = './cache.json'
 MEMORY = 2048
+METER_SYM = '■'
 
 def md5(fname):
     hash_md5 = hashlib.md5()
@@ -115,8 +116,16 @@ def time_cmd_handler(args):
     for ts in sorted(each_hour, key=float, reverse=args.reverse):
         num_ts = float(ts)
         dt = datetime.fromtimestamp(num_ts)
+        cnt = each_hour[ts]
 
-        print(dt.strftime('%Y/%m/%d:%H:%M~\t'), each_hour[ts])
+        if args.graph:
+            max = 0 
+            for c in each_hour:
+                max = each_hour[c] if max < each_hour[c] else max
+
+            print('{0} {1}\t{2}'.format(dt.strftime('%Y/%m/%d:%H:%M~\t'), cnt, METER_SYM*int(35*cnt/max)))
+        else:
+            print(dt.strftime('%Y/%m/%d:%H:%M~\t'), cnt)
     
     with open(CACHE_PATH, 'w+') as f:
         json.dump(cache, f)
@@ -181,7 +190,7 @@ def main():
     parser_time.add_argument('-s', '--start', help='Specify date after which number of accesses')
     parser_time.add_argument('-e', '--end', help='Specify date before which number of accesses')
     # parser_time.add_argument('-o', '--output')
-    # parser_time.add_argument('-g', '--graph', action='store_true')
+    parser_time.add_argument('-g', '--graph', action='store_true')
     parser_time.add_argument('-r', '--reverse', action='store_true', help='show in descending')
     parser_time.set_defaults(handler=time_cmd_handler)
 
