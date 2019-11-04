@@ -67,4 +67,4 @@ optional arguments:
 ```
 
 # Note
-I use sample of access.log from elastic/examples.
+I used sample Apache log files from [here](https://raw.githubusercontent.com/elastic/examples/master/Common%20Data%20Formats/apache_logs/apache_logs) and fixed it.
