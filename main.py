@@ -16,6 +16,7 @@ LOG_DIR = './sample-logs'
 CACHE_PATH = './cache.json'
 MEMORY = 2048
 METER_SYM = '■'
+MAX_METER_LEN = 50
 
 def md5(fname):
     hash_md5 = hashlib.md5()
@@ -123,7 +124,7 @@ def time_cmd_handler(args):
             for c in each_hour:
                 max = each_hour[c] if max < each_hour[c] else max
 
-            print('{0} {1}\t{2}'.format(dt.strftime('%Y/%m/%d:%H:%M~\t'), cnt, METER_SYM*int(35*cnt/max)))
+            print('{0} {1}\t{2}'.format(dt.strftime('%Y/%m/%d:%H:%M~\t'), cnt, METER_SYM*int(MAX_METER_LEN*cnt/max)))
         else:
             print(dt.strftime('%Y/%m/%d:%H:%M~\t'), cnt)
     
@@ -173,7 +174,16 @@ def ip_cmd_handler(args):
 
     # response
     for ip in sorted(each_ip, key=each_ip.__getitem__, reverse=args.reverse):
-        print('{0}\t{1}'.format(ip, each_ip[ip]))
+        cnt = each_ip[ip] 
+
+        if args.graph:
+            max = 0 
+            for c in each_ip:
+                max = each_ip[c] if max < each_ip[c] else max
+
+            print('{0}\t{1}\t{2}'.format(ip, cnt, METER_SYM*int(MAX_METER_LEN*cnt/max)))
+        else:
+            print('{0}\t{1}'.format(ip, cnt))
 
     with open(CACHE_PATH, 'w+') as f:
         json.dump(cache, f)
@@ -183,20 +193,24 @@ def main():
         with open(CACHE_PATH, 'w') as f:
             f.write('{}')
 
-    cmd_parser = argparse.ArgumentParser(description='Analize access.log of Apache.')
-    subcmd_parsers = cmd_parser.add_subparsers()
+    cmd_parser = argparse.ArgumentParser(
+            description='Analize access.log of Apache.',
+            epilog='For show help in detail, <subcommand> --help')
+    subcmd_parsers = cmd_parser.add_subparsers(
+            title='subcommands'
+            )
 
     parser_time = subcmd_parsers.add_parser('time')
-    parser_time.add_argument('-s', '--start', help='Specify date after which number of accesses')
+    parser_time.add_argument('-s', '--start', help='Specify date after which number of accesses. FORMAT:"YYYY/MM/DD" or "YYYY/MM/DD:HH"')
     parser_time.add_argument('-e', '--end', help='Specify date before which number of accesses')
     # parser_time.add_argument('-o', '--output')
-    parser_time.add_argument('-g', '--graph', action='store_true')
+    parser_time.add_argument('-g', '--graph', action='store_true', help='show graphicaly')
     parser_time.add_argument('-r', '--reverse', action='store_true', help='show in descending')
     parser_time.set_defaults(handler=time_cmd_handler)
 
     parser_ip = subcmd_parsers.add_parser('ip')
     parser_ip.add_argument('-r', '--reverse', action='store_true', help='show in descending')
-    # parser_ip.add_argument('-g', '--graph', action='store_true')
+    parser_ip.add_argument('-g', '--graph', action='store_true', help='show graphicaly')
     parser_ip.set_defaults(handler=ip_cmd_handler)
 
     args = cmd_parser.parse_args()
