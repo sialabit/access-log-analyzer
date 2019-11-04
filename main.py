@@ -1,6 +1,7 @@
 import os
 import sys
 import getopt
+import re
 from glob import glob
 from datetime import datetime, date, time
 import json
@@ -8,6 +9,7 @@ import argparse
 import hashlib
 from pprint import pprint
 
+from termcolor import colored
 import apache_log_parser
 
 LOG_DIR = './sample-logs'
@@ -30,6 +32,9 @@ def resided_ts(dt):
     return resided_dt.timestamp()
 
 def parse_time_str(time_str):
+    if not re.match(r'^\d{4}/(?:0?[1-9]|1[0-2])/(?:0?[1-9]|[12]\d|3[01])(?::\d{1,2})?$', time_str):
+        raise Exception('[Warning] Date format is incorrect') 
+         
     h = int( time_str.split(':')[1] ) if ':' in time_str else 0
     y, m, d = map(int, time_str.split(':')[0].split('/'))
     dt = datetime(year=y, month=m, day=d, hour=h)
@@ -169,26 +174,31 @@ def main():
         with open(CACHE_PATH, 'w') as f:
             f.write('{}')
 
-    cmd_parser = argparse.ArgumentParser()
+    cmd_parser = argparse.ArgumentParser(description='Analize access.log of Apache.')
     subcmd_parsers = cmd_parser.add_subparsers()
 
     parser_time = subcmd_parsers.add_parser('time')
-    parser_time.add_argument('-s', '--start')
-    parser_time.add_argument('-e', '--end')
-    parser_time.add_argument('-o', '--output')
-    parser_time.add_argument('-g', '--graph', action='store_true')
-    parser_time.add_argument('-r', '--reverse', action='store_true')
+    parser_time.add_argument('-s', '--start', help='Specify date after which number of accesses')
+    parser_time.add_argument('-e', '--end', help='Specify date before which number of accesses')
+    # parser_time.add_argument('-o', '--output')
+    # parser_time.add_argument('-g', '--graph', action='store_true')
+    parser_time.add_argument('-r', '--reverse', action='store_true', help='show in descending')
     parser_time.set_defaults(handler=time_cmd_handler)
 
     parser_ip = subcmd_parsers.add_parser('ip')
-    parser_ip.add_argument('-r', '--reverse', action='store_true')
-    parser_ip.add_argument('-g', '--graph', action='store_true')
+    parser_ip.add_argument('-r', '--reverse', action='store_true', help='show in descending')
+    # parser_ip.add_argument('-g', '--graph', action='store_true')
     parser_ip.set_defaults(handler=ip_cmd_handler)
 
     args = cmd_parser.parse_args()
     if hasattr(args, 'handler'):
         args.handler(args)
     else:
-        print('no such a sub-command')
+        if len(sys.argv) >= 2:
+            print(colored('[Warning] no such a sub-command', 'red'), end='\n\n')
+            cmd_parser.print_help()
+        else:
+            print(colored('[Warning] Include any sub-command', 'red'), end='\n\n')
+            cmd_parser.print_help()
 
 main()
