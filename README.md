@@ -13,6 +13,7 @@ Python 3.7.3
 - When analyzing same access.log, it is more faster to complete from the second time because of caching.
 - You can specify a order; ascending or descending.
 - This can show in graphicaly
+
 ex)
 ```
 $ python analyzer.py ip --graph
@@ -29,8 +30,8 @@ $ python analyzer.py ip --graph
 100.43.83.137	84	■■■■■■■■
 68.180.224.225	99	■■■■■■■■■■
 209.85.238.199	102	■■■■■■■■■■
-50.16.19.13		113	■■■■■■■■■■■
-75.97.9.59		273	■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+50.16.19.13	113	■■■■■■■■■■■
+75.97.9.59	273	■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 130.237.218.86	357	■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 46.105.14.53	364	■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 66.249.73.135	482	■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
@@ -64,3 +65,6 @@ optional arguments:
   -r, --reverse  show in descending
   -g, --graph    show graphicaly --help
 ```
+
+# Note
+I use sample of access.log from elastic/examples.
